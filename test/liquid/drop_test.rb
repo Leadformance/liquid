@@ -71,23 +71,29 @@ class DropsTest < Test::Unit::TestCase
   include Liquid
 
   def test_product_drop
-
     assert_nothing_raised do
       tpl = Liquid::Template.parse( '  '  )
       tpl.render('product' => ProductDrop.new)
     end
   end
 
+  def test_drop_does_only_respond_to_whitelisted_methods
+    assert_equal "", Liquid::Template.parse("{{ product.inspect }}").render('product' => ProductDrop.new)
+    assert_equal "", Liquid::Template.parse("{{ product.pretty_inspect }}").render('product' => ProductDrop.new)
+    assert_equal "", Liquid::Template.parse("{{ product.whatever }}").render('product' => ProductDrop.new)
+    assert_equal "", Liquid::Template.parse('{{ product | map: "inspect" }}').render('product' => ProductDrop.new)
+    assert_equal "", Liquid::Template.parse('{{ product | map: "pretty_inspect" }}').render('product' => ProductDrop.new)
+    assert_equal "", Liquid::Template.parse('{{ product | map: "whatever" }}').render('product' => ProductDrop.new)
+  end
+
   def test_text_drop
     output = Liquid::Template.parse( ' {{ product.texts.text }} '  ).render('product' => ProductDrop.new)
     assert_equal ' text1 ', output
-
   end
 
   def test_unknown_method
     output = Liquid::Template.parse( ' {{ product.catchall.unknown }} '  ).render('product' => ProductDrop.new)
     assert_equal ' method: unknown ', output
-
   end
 
   def test_integer_argument_drop
@@ -113,6 +119,13 @@ class DropsTest < Test::Unit::TestCase
   def test_protected
     output = Liquid::Template.parse( ' {{ product.callmenot }} '  ).render('product' => ProductDrop.new)
     assert_equal '  ', output
+  end
+
+  def test_object_methods_not_allowed
+    [:dup, :clone, :singleton_class, :eval, :class_eval, :inspect].each do |method|
+      output = Liquid::Template.parse(" {{ product.#{method} }} ").render('product' => ProductDrop.new)
+      assert_equal '  ', output
+    end
   end
 
   def test_scope

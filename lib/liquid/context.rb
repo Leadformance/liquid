@@ -22,6 +22,8 @@ module Liquid
       @errors         = []
       @rethrow_errors = rethrow_errors
       squash_instance_assigns_with_environments
+
+      @interrupts = []
     end
 
     def strainer
@@ -37,8 +39,24 @@ module Liquid
 
       filters.each do |f|
         raise ArgumentError, "Expected module but got: #{f.class}" unless f.is_a?(Module)
+        Strainer.add_known_filter(f)
         strainer.extend(f)
       end
+    end
+
+    # are there any not handled interrupts?
+    def has_interrupt?
+      !@interrupts.empty?
+    end
+
+    # push an interrupt to the stack. this interrupt is considered not handled.
+    def push_interrupt(e)
+      @interrupts.push(e)
+    end
+
+    # pop an interrupt from the stack
+    def pop_interrupt
+      @interrupts.pop
     end
 
     def handle_error(e)
@@ -54,11 +72,7 @@ module Liquid
     end
 
     def invoke(method, *args)
-      if strainer.respond_to?(method)
-        strainer.__send__(method, *args)
-      else
-        args.first
-      end
+      strainer.invoke(method, *args)
     end
 
     # Push new local scope on the stack. use <tt>Context#stack</tt> instead
