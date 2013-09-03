@@ -25,7 +25,7 @@ module Liquid
           filters.each do |f|
             if matches = f.match(/\s*(\w+)(?:\s*#{FilterArgumentSeparator}(.*))?/)
               filtername = matches[1]
-              filterargs = matches[2].to_s.scan(/(?:\A|#{ArgumentSeparator})\s*((?:\w+\s*\:\s*)?#{QuotedFragment})/o).flatten
+              filterargs = matches[2].to_s.scan(/(?:\A|#{ArgumentSeparator})\s*((?:#{QuotedFragment}\s*\:\s*)?#{QuotedFragment})/o).flatten
               @filters << [filtername, filterargs]
             end
           end
@@ -39,7 +39,7 @@ module Liquid
         filterargs = []
         keyword_args = {}
         filter[1].to_a.each do |a|
-          if matches = a.match(/\A#{TagAttributes}\z/o)
+          if matches = a.match(/\A(#{QuotedFragment})\s*\:\s*(#{QuotedFragment})\z/o)
             keyword_args[matches[1]] = context[matches[2]]
           else
             filterargs << context[a]
